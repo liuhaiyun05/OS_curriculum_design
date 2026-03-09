@@ -1,10 +1,11 @@
-.section .multiboot
+.section .multiboot,"a"
 .align 4
-.long 0x1BADB002              # magic
-.long 0x00000003              # flags: align | meminfo
+.long 0x1BADB002
+.long 0x00000003
 .long -(0x1BADB002 + 0x00000003)
 
 .section .text
+.code32
 .global _start
 .extern kernel_main
 
@@ -12,12 +13,12 @@ _start:
     mov $stack_top, %esp
     call kernel_main
 
-1:
+halt:
     cli
     hlt
-    jmp 1b
+    jmp halt
 
-.section .bss
+.section .bss,"aw",@nobits
 .align 16
 stack_bottom:
     .skip 16384

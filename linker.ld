@@ -1,26 +1,27 @@
+OUTPUT_FORMAT("elf32-i386")
 ENTRY(_start)
 
 SECTIONS
 {
-    . = 0x00100000;
+    . = 1M;
 
-    .multiboot : {
-        *(.multiboot)
+    .multiboot ALIGN(4) : {
+        KEEP(*(.multiboot))
     }
 
-    .text : {
+    .text ALIGN(4K) : {
         *(.text*)
     }
 
-    .rodata : {
+    .rodata ALIGN(4K) : {
         *(.rodata*)
     }
 
-    .data : {
+    .data ALIGN(4K) : {
         *(.data*)
     }
 
-    .bss : {
+    .bss ALIGN(4K) : {
         *(COMMON)
         *(.bss*)
     }

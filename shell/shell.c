@@ -1,15 +1,114 @@
-#include "../console/console.h"
 #include "shell.h"
+#include "../console/console.h"
+#include "../drivers/mouse.h"
+#include "../include/string.h"
 
-void shell_demo(void) {
-    console_write_line("MyOS> help");
-    console_write_line("Supported commands (demo stage):");
-    console_write_line("  help");
-    console_write_line("  clear");
-    console_write_line("  version");
-    console_write_line("");
-    console_write_line("MyOS> version");
-    console_write_line("MyOS version 0.1");
-    console_write_line("");
-    console_write_line("MyOS> ");
+#define INPUT_MAX 128
+
+static char input_buffer[INPUT_MAX];
+static int input_len = 0;
+
+static void run_command(const char* cmd) {
+    if (strcmp(cmd, "") == 0) return;
+
+    if (strcmp(cmd, "help") == 0) {
+        console_write_line("Commands:");
+        console_write_line("  help");
+        console_write_line("  clear");
+        console_write_line("  version");
+        console_write_line("  about");
+        console_write_line("  echo <text>");
+        console_write_line("  mouse");
+        console_write_line("  mouse on");
+        console_write_line("  mouse off");
+        return;
+    }
+
+    if (strcmp(cmd, "clear") == 0) {
+        console_clear();
+        return;
+    }
+
+    if (strcmp(cmd, "version") == 0) {
+        console_write_line("MyOS version 0.2");
+        return;
+    }
+
+    if (strcmp(cmd, "about") == 0) {
+        console_write_line("MyOS: simple educational operating system.");
+        console_write_line("Stage 2: CLI + keyboard + mouse interaction.");
+        return;
+    }
+
+    if (strncmp(cmd, "echo ", 5) == 0) {
+        console_write_line(cmd + 5);
+        return;
+    }
+
+    if (strcmp(cmd, "mouse") == 0) {
+        MouseState ms = mouse_get_state();
+        console_write("Mouse: x=");
+        console_write_dec(ms.x);
+        console_write(" y=");
+        console_write_dec(ms.y);
+        console_write(" left=");
+        console_write_dec(ms.left);
+        console_write(" right=");
+        console_write_dec(ms.right);
+        console_write(" middle=");
+        console_write_dec(ms.middle);
+        console_put_char('\n');
+        return;
+    }
+
+    if (strcmp(cmd, "mouse on") == 0) {
+        mouse_set_enabled(1);
+        console_write_line("Mouse enabled.");
+        return;
+    }
+
+    if (strcmp(cmd, "mouse off") == 0) {
+        mouse_set_enabled(0);
+        console_write_line("Mouse disabled.");
+        return;
+    }
+
+    console_write("Unknown command: ");
+    console_write_line(cmd);
+}
+
+void shell_init(void) {
+    input_len = 0;
+    memset(input_buffer, 0, INPUT_MAX);
+}
+
+void shell_prompt(void) {
+    console_write("MyOS> ");
+}
+
+void shell_handle_char(char c) {
+    if (c == '\n') {
+        console_put_char('\n');
+        input_buffer[input_len] = '\0';
+        run_command(input_buffer);
+        input_len = 0;
+        memset(input_buffer, 0, INPUT_MAX);
+        shell_prompt();
+        return;
+    }
+
+    if (c == '\b') {
+        if (input_len > 0) {
+            input_len--;
+            input_buffer[input_len] = '\0';
+            console_put_char('\b');
+        }
+        return;
+    }
+
+    if (c < 32 || c > 126) return;
+    if (input_len >= INPUT_MAX - 1) return;
+
+    input_buffer[input_len++] = c;
+    console_put_char(c);
 }

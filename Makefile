@@ -1,19 +1,20 @@
 CC      = gcc
-AS      = as
 LD      = ld
 
-CFLAGS  = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib -nostdinc -Wall -Wextra -Iinclude
-ASFLAGS = -m32
+CFLAGS  = -m32 -ffreestanding -fno-pie -fno-stack-protector -nostdlib -nostdinc -Wall -Wextra
 LDFLAGS = -m elf_i386 -T linker.ld
 
 C_SOURCES = \
 	kernel/kernel.c \
 	console/console.c \
+	drivers/keyboard.c \
+	drivers/mouse.c \
+	include/string.c \
 	shell/shell.c
 
 C_OBJECTS = $(C_SOURCES:.c=.o)
 
-all: myos.iso
+all: check myos.iso
 
 boot/boot.o: boot/boot.s
 	$(CC) -m32 -c $< -o $@
@@ -24,11 +25,20 @@ kernel/%.o: kernel/%.c
 console/%.o: console/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+drivers/%.o: drivers/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+include/%.o: include/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 shell/%.o: shell/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 myos.bin: boot/boot.o $(C_OBJECTS) linker.ld
 	$(LD) $(LDFLAGS) -o $@ boot/boot.o $(C_OBJECTS)
+
+check: myos.bin
+	grub-file --is-x86-multiboot myos.bin
 
 iso/boot/myos.bin: myos.bin
 	cp myos.bin iso/boot/myos.bin
@@ -36,11 +46,11 @@ iso/boot/myos.bin: myos.bin
 myos.iso: iso/boot/myos.bin iso/boot/grub/grub.cfg
 	grub-mkrescue -o myos.iso iso
 
-run: myos.iso
+run: all
 	qemu-system-i386 -cdrom myos.iso
 
 clean:
-	rm -f boot/*.o kernel/*.o console/*.o shell/*.o
+	rm -f boot/*.o kernel/*.o console/*.o drivers/*.o include/*.o shell/*.o
 	rm -f myos.bin myos.iso iso/boot/myos.bin
 
-.PHONY: all run clean
+.PHONY: all check run clean
