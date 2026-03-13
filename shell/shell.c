@@ -2,11 +2,26 @@
 #include "../console/console.h"
 #include "../drivers/mouse.h"
 #include "../include/string.h"
+#include "../timer/timer.h"
 
 #define INPUT_MAX 128
 
 static char input_buffer[INPUT_MAX];
 static int input_len = 0;
+
+static int parse_uint(const char* str, uint32_t* out) {
+    uint32_t value = 0;
+
+    if (!str[0]) return 0;
+
+    for (size_t i = 0; str[i]; i++) {
+        if (str[i] < '0' || str[i] > '9') return 0;
+        value = value * 10 + (uint32_t)(str[i] - '0');
+    }
+
+    *out = value;
+    return 1;
+}
 
 static void run_command(const char* cmd) {
     if (strcmp(cmd, "") == 0) return;
@@ -21,6 +36,9 @@ static void run_command(const char* cmd) {
         console_write_line("  mouse");
         console_write_line("  mouse on");
         console_write_line("  mouse off");
+        console_write_line("  ticks");
+        console_write_line("  slice");
+        console_write_line("  slice <ticks>");
         return;
     }
 
@@ -70,6 +88,34 @@ static void run_command(const char* cmd) {
     if (strcmp(cmd, "mouse off") == 0) {
         mouse_set_enabled(0);
         console_write_line("Mouse disabled.");
+        return;
+    }
+
+    if (strcmp(cmd, "ticks") == 0) {
+        console_write("Timer ticks: ");
+        console_write_dec((int)timer_get_ticks());
+        console_put_char('\n');
+        return;
+    }
+
+    if (strcmp(cmd, "slice") == 0) {
+        console_write("Round-robin time slice: ");
+        console_write_dec((int)timer_get_timeslice());
+        console_write_line(" ticks");
+        return;
+    }
+
+    if (strncmp(cmd, "slice ", 6) == 0) {
+        uint32_t ticks = 0;
+        if (!parse_uint(cmd + 6, &ticks)) {
+            console_write_line("Usage: slice <ticks>");
+            return;
+        }
+
+        timer_set_timeslice(ticks);
+        console_write("Time slice updated to ");
+        console_write_dec((int)timer_get_timeslice());
+        console_write_line(" ticks");
         return;
     }
 

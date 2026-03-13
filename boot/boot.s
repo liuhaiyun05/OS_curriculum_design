@@ -23,3 +23,5 @@ halt:
 stack_bottom:
     .skip 16384
 stack_top:
+
+.section .note.GNU-stack,"",@progbits

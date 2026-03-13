@@ -11,8 +11,8 @@ typedef struct {
 } MouseState;
 
 void mouse_init(void);
-void mouse_poll(void);
 MouseState mouse_get_state(void);
 void mouse_set_enabled(int enabled);
+int mouse_consume_update(void);
 
 #endif
